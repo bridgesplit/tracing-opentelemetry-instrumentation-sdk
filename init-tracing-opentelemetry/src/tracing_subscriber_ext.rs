@@ -1,11 +1,21 @@
 use log::Level;
 use opentelemetry::trace::TraceError;
 use opentelemetry_appender_log::OpenTelemetryLogBridge;
+use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
 use opentelemetry_otlp::{HttpExporterBuilder, LogExporterBuilder};
-use opentelemetry_sdk::{logs::{BatchLogProcessor, LoggerProvider}, runtime, trace::Tracer};
+use opentelemetry_sdk::{
+    logs::{BatchLogProcessor, LoggerProvider},
+    runtime,
+    trace::Tracer,
+};
 use tracing::{info, Subscriber};
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, registry::LookupSpan, Layer};
+use tracing_subscriber::{
+    filter::EnvFilter,
+    layer::{self, SubscriberExt},
+    registry::LookupSpan,
+    Layer,
+};
 
 use crate::Error;
 
@@ -88,10 +98,8 @@ where
     init_propagator()?;
     Ok(tracing_opentelemetry::layer()
         .with_error_records_to_exceptions(true)
-        .with_tracer(otel_tracer)
-    )
+        .with_tracer(otel_tracer))
 }
-
 
 pub fn init_subscribers() -> Result<(), Error> {
     //setup a temporary subscriber to log output during setup
@@ -102,7 +110,9 @@ pub fn init_subscribers() -> Result<(), Error> {
     info!("init logging & tracing");
 
     //Create an exporter that writes to stdout
-    let exporter = LogExporterBuilder::Http(HttpExporterBuilder::default()).build_log_exporter().unwrap();
+    let exporter = LogExporterBuilder::Http(HttpExporterBuilder::default())
+        .build_log_exporter()
+        .unwrap();
     //Create a LoggerProvider and register the exporter
     let logger_provider = LoggerProvider::builder()
         .with_log_processor(BatchLogProcessor::builder(exporter, runtime::Tokio).build())
@@ -115,6 +125,7 @@ pub fn init_subscribers() -> Result<(), Error> {
 
     let subscriber = tracing_subscriber::registry()
         .with(build_otel_layer()?)
+        .with(OpenTelemetryTracingBridge::new(&logger_provider))
         .with(build_loglevel_filter_layer())
         .with(build_logger_text());
     tracing::subscriber::set_global_default(subscriber)?;

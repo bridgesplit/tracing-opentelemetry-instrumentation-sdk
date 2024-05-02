@@ -29,7 +29,7 @@ opentelemetry-stdout = { workspace = true, features = [
 ], optional = true }
 opentelemetry-semantic-conventions = { workspace = true, optional = true }
 opentelemetry-zipkin = { workspace = true, features = [], optional = true }
-opentelemetry_sdk = { workspace = true }
+opentelemetry_sdk = { workspace = true, features = ["logs_level_enabled"] }
 thiserror = "1.0"
 tonic = { workspace = true, optional = true, features = ["tls"] }
 tracing = { workspace = true }
@@ -41,6 +41,7 @@ tracing-subscriber = { version = "0.3", default-features = false, features = [
   "fmt",
   "json",
 ], optional = true }
+opentelemetry-appender-tracing = { version = "0.3.0", features = ["logs_level_enabled", "log"] }
 
 [dev-dependencies]
 assert2 = "0.3"
