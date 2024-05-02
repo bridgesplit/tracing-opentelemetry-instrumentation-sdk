@@ -1,5 +1,8 @@
+use log::Level;
 use opentelemetry::trace::TraceError;
-use opentelemetry_sdk::trace::Tracer;
+use opentelemetry_appender_log::OpenTelemetryLogBridge;
+use opentelemetry_otlp::{HttpExporterBuilder, LogExporterBuilder};
+use opentelemetry_sdk::{logs::{BatchLogProcessor, LoggerProvider}, runtime, trace::Tracer};
 use tracing::{info, Subscriber};
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, registry::LookupSpan, Layer};
@@ -85,8 +88,10 @@ where
     init_propagator()?;
     Ok(tracing_opentelemetry::layer()
         .with_error_records_to_exceptions(true)
-        .with_tracer(otel_tracer))
+        .with_tracer(otel_tracer)
+    )
 }
+
 
 pub fn init_subscribers() -> Result<(), Error> {
     //setup a temporary subscriber to log output during setup
@@ -95,6 +100,18 @@ pub fn init_subscribers() -> Result<(), Error> {
         .with(build_logger_text());
     let _guard = tracing::subscriber::set_default(subscriber);
     info!("init logging & tracing");
+
+    //Create an exporter that writes to stdout
+    let exporter = LogExporterBuilder::Http(HttpExporterBuilder::default()).build_log_exporter().unwrap();
+    //Create a LoggerProvider and register the exporter
+    let logger_provider = LoggerProvider::builder()
+        .with_log_processor(BatchLogProcessor::builder(exporter, runtime::Tokio).build())
+        .build();
+
+    // Setup Log Appender for the log crate.
+    let otel_log_appender = OpenTelemetryLogBridge::new(&logger_provider);
+    log::set_boxed_logger(Box::new(otel_log_appender)).unwrap();
+    log::set_max_level(Level::Info.to_level_filter());
 
     let subscriber = tracing_subscriber::registry()
         .with(build_otel_layer()?)

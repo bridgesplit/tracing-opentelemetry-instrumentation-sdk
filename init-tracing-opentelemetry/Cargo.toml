@@ -12,13 +12,18 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-opentelemetry = { workspace = true }
+opentelemetry = { workspace = true, features = ["logs"] }
 opentelemetry-aws = { workspace = true, optional = true, features = ["trace"] }
 opentelemetry-jaeger-propagator = { workspace = true, optional = true }
 opentelemetry-otlp = { workspace = true, optional = true, features = [
   "grpc-tonic",
   "trace",
+  "http-proto",
+   "reqwest-client",
+   "logs"
 ] }
+opentelemetry-appender-log = "0.3.0"
+log = {version = "0.4", features = ["kv", "std"]}
 opentelemetry-stdout = { workspace = true, features = [
   "trace",
 ], optional = true }
@@ -45,6 +50,7 @@ opentelemetry_sdk = { workspace = true, features = [
   "trace",
   "rt-tokio",
   "testing",
+  "logs_level_enabled"
 ] }
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
