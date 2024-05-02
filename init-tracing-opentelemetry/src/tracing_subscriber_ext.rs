@@ -1,6 +1,4 @@
-use log::Level;
 use opentelemetry::trace::TraceError;
-use opentelemetry_appender_log::OpenTelemetryLogBridge;
 use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
 use opentelemetry_otlp::{HttpExporterBuilder, LogExporterBuilder};
 use opentelemetry_sdk::{
@@ -12,7 +10,7 @@ use tracing::{info, Subscriber};
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{
     filter::EnvFilter,
-    layer::{self, SubscriberExt},
+    layer::SubscriberExt,
     registry::LookupSpan,
     Layer,
 };
@@ -117,11 +115,6 @@ pub fn init_subscribers() -> Result<(), Error> {
     let logger_provider = LoggerProvider::builder()
         .with_log_processor(BatchLogProcessor::builder(exporter, runtime::Tokio).build())
         .build();
-
-    // Setup Log Appender for the log crate.
-    let otel_log_appender = OpenTelemetryLogBridge::new(&logger_provider);
-    log::set_boxed_logger(Box::new(otel_log_appender)).unwrap();
-    log::set_max_level(Level::Info.to_level_filter());
 
     let subscriber = tracing_subscriber::registry()
         .with(build_otel_layer()?)
