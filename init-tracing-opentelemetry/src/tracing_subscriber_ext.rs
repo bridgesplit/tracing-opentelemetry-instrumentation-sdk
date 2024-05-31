@@ -1,6 +1,6 @@
 use opentelemetry::trace::TraceError;
 use opentelemetry_appender_tracing::layer::OpenTelemetryTracingBridge;
-use opentelemetry_otlp::{HttpExporterBuilder, LogExporterBuilder};
+use opentelemetry_otlp::{LogExporterBuilder, TonicExporterBuilder};
 use opentelemetry_sdk::{
     logs::{BatchLogProcessor, LoggerProvider},
     runtime,
@@ -8,12 +8,7 @@ use opentelemetry_sdk::{
 };
 use tracing::{info, Subscriber};
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::{
-    filter::EnvFilter,
-    layer::SubscriberExt,
-    registry::LookupSpan,
-    Layer,
-};
+use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, registry::LookupSpan, Layer};
 
 use crate::Error;
 
@@ -108,7 +103,7 @@ pub fn init_subscribers() -> Result<(), Error> {
     info!("init logging & tracing");
 
     //Create an exporter that writes to stdout
-    let exporter = LogExporterBuilder::Http(HttpExporterBuilder::default())
+    let exporter = LogExporterBuilder::Tonic(TonicExporterBuilder::default())
         .build_log_exporter()
         .unwrap();
     //Create a LoggerProvider and register the exporter
