@@ -8,7 +8,7 @@ use opentelemetry_sdk::{
 };
 use tracing::{info, Subscriber};
 use tracing_opentelemetry::OpenTelemetryLayer;
-use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, registry::LookupSpan, Layer};
+use tracing_subscriber::{filter::EnvFilter, fmt::{self, writer::MakeWriterExt}, layer::SubscriberExt, registry::LookupSpan, Layer};
 
 use crate::Error;
 
@@ -111,7 +111,12 @@ pub fn init_subscribers() -> Result<(), Error> {
         .with_log_processor(BatchLogProcessor::builder(exporter, runtime::Tokio).build())
         .build();
 
+        let logfile = tracing_appender::rolling::hourly("/logging", "app.log");
+        // Log `INFO` and above to stdout.
+        let stdout = std::io::stdout.with_max_level(tracing::Level::INFO);
+
     let subscriber = tracing_subscriber::registry()
+        .with(fmt::Layer::new().with_writer(stdout.and(logfile)).with_ansi(false))
         .with(build_otel_layer()?)
         .with(OpenTelemetryTracingBridge::new(&logger_provider))
         .with(build_loglevel_filter_layer())
